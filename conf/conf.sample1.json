@@ -1,0 +1,5 @@
+{
+	"targets": "http://www.xyz.foo", 
+	"concurrency": 2, 
+	"requests": 7
+}

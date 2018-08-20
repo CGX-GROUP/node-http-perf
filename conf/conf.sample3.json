@@ -1,0 +1,35 @@
+[
+	{
+		"root": "http://www.xyz.foo/section",
+		"concurrency": 2,
+		"requests": 7,
+		"period": [
+			"100ms",
+			"1s"
+		],
+		"defaults": true
+	},
+	{
+		"targets": [
+			"business..."
+		],
+		"extra": [
+			"",
+			"/economy",
+			"/media"
+		],
+		"concurrency": 10,
+		"requests": 10,
+		"period": [
+			"1s",
+			"5s"
+		]
+	},
+	{
+		"targets": [
+			"technology",
+			"arts",
+			"food"
+		]
+	}
+]

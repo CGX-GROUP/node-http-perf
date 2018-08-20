@@ -1,0 +1,35 @@
+{
+  "name": "nperf2",
+  "version": "1.0.0",
+  "description": "Http server performance testing",
+  "main": "nperf2.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CGX-GROUP/node-http-perf.git"
+  },
+  "keywords": [
+    "http",
+    "performance",
+    "server",
+    "requests",
+    "load",
+    "test"
+  ],
+  "author": "CGX Group (Pascal Guislain)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/CGX-GROUP/node-http-perf/issues"
+  },
+  "homepage": "https://github.com/CGX-GROUP/node-http-perf#readme",
+  "dependencies": {
+    "async": "^2.6.0",
+    "colors": "0.6.x",
+    "optimist": "0.3.x",
+    "sys": "0.0.1",
+    "url": "^0.11.0",
+    "url-join": "^3.0.0"
+  }
+}

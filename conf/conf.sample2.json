@@ -1,0 +1,11 @@
+{
+	"targets": [
+		"http://www.foo.bar",
+		"http://www.xyz.foo",
+		"http://www.foo.xyz",
+		"http://www.abc.foo"
+	], 
+	"concurrency": 2, 
+	"requests": 7,
+	"period":["100ms","1s"]	
+}

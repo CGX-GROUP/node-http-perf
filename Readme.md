@@ -1,157 +1,168 @@
-# Node HTTP Server Performance Tool
+# Nperf2 - Node HTTP Server Performance Tool
 
-http-perf is a tool used to test HTTP/S server performance. It is basically an HTTP client that executes specified requests against a server and then measures and records response times and other metrics.
+Nperf2 is a node server application for generic web server performance testing.
+It sends http requests to a server or servers then measures, reports and logs the response time.
+It can be used to simulate the stress on the server with multiple clients.
 
-Its function is similar to the popular [ab](http://httpd.apache.org/docs/2.0/programs/ab.html) tool, and in fact the basic usage is identical. However, this tool goes above what `ab` provides for my needs. For example, it parses the server-side request time (if reported in headers) and displays it along with the client's view of request time for each request. It can also output its data in JSON.
+It is based on the nperf project, modified so that it can be used as a node js library instead of in command line.
+Original source: https://github.com/zanchin/node-http-perf
+The original code has been extensively refactored and modified.
+
+The application must be installed on a server and its execution is triggered by an http request. It can be used from a browser which will display the results in return. 
+
+## Sample Use
+
+Run a test against www.xyz.foo using defaults parameters.
+
+	localhost:8080/nperf2?targets=www.xyz.foo
+	
+Run a test using the parameters found in ./conf/conf.sample1.json
+
+	localhost:8080/nperf2?conf=sample1
+	
+Sample Output:
+
+    #[status] Response # /Request Id time: Client Time (ms) (Server Time (ms)) URL
+    #[301] 1 /1 time: 24 (-1) http://www.xyz.foo
+    #[301] 2 /2 time: 27 (-1) http://www.xyz.foo
+    #[301] 3 /3 time: 29 (-1) http://www.xyz.foo
+    #[301] 4 /4 time: 30 (-1) http://www.xyz.foo
+    #[301] 5 /5 time: 32 (-1) http://www.xyz.foo
+    #[301] 6 /6 time: 34 (-1) http://www.xyz.foo
+    #[301] 7 /7 time: 36 (-1) http://www.xyz.foo
+    # status:  '301': 7 ,  min: 24,  max: 36,  avg: 30.29,  count: 7,  rate: 50.72,  start: 2018-08-20T08:42:18.119Z,  total_time: 140 
+    ALL DONE
+	
 
 ## Install
 
-via `npm`, preferrably globally (-g)
+Currently you need to download the source and install manually any dependency. We will release it as an NPM package in the future.
+	
+The installation contains the source and sample files. `_start.bat` can then be used to launch a local node server on Windows.
 
-    $ npm install -g http-perf
+## Parameters
 
-This installs an executable called `nperf`.
+Most parameters can be set in the URL but to take full advantage of parameterization a config file is needed.
+The parameters extra and root, targets and periods when defined as arrays, must be set in a config file.
 
-You can run the tool directly
+### Help: Print this usage and exit
 
-    $ node node_modules/http-perf/bin/nperf
+	localhost:8080/nperf2?help=true...
+	
+### Dryrun: Read config, but don't run
 
-Or if installed globally
+	localhost:8080/nperf2?dryrun=true,...
 
-    $ nperf
+### Verbose: Verbose output
 
+	localhost:8080/nperf2?verbose=true...
 
-## Quick Start
+### Conf: Config file
 
-Send 10 requests to google.com with 5 concurrent requests:
+	localhost:8080/nperf2?verbose=true&conf=sample1
 
-    $ nperf -c 5 -n 10 http://www.google.com/
-    [status] response# /request_id time: client time (ms) (server time (ms))
-    [200] 1 /1 time: 78 (-1)
-    [200] 2 /0 time: 89 (-1)
-    [200] 3 /3 time: 86 (-1)
-    [200] 4 /4 time: 88 (-1)
-    [200] 5 /2 time: 91 (-1)
-    [200] 6 /6 time: 76 (-1)
-    [200] 7 /5 time: 82 (-1)
-    [200] 8 /7 time: 82 (-1)
-    [200] 9 /9 time: 82 (-1)
-    [200] 10 /8 time: 100 (-1)
-    stats:
-    { min: 76,
-      max: 100,
-      avg: 85.4,
-      count: 10,
-      rate: 50.76142131979695,
-      start: 1337831509423,
-      total_time: 197 }
-    
-We see that 10 requests were sent to the server with the average response time being 85.4 ms. The server processed requests at a rate of about 50 requests per second.
+The config file name can be set in full or be partial:
 
-Server processing time is not available (-1) because Google does not return it in a header. Supported headers are: _X-Response-Time_ and _X-Runtime_.
+* Full file name - e.g.: `conf=./foo.json` will be converted to: `./conf/foo.json`
 
-## Usage
+* Partial name (no .json extension) - e.g.: `conf=bar` will be converted to: `./conf/conf.bar.json`
+	
+### Defaults: Persist parameters as defaults settings
 
-Display usage:
+	A config file can list different series of tests but you may want to set some defaults only once e.g.:
+	
+	[
+		{
+			"root": "www.xyz.foo",
+			"period": ["100ms","1s"],
+			"requests": 3,
+			"defaults": true  <-all above settings are now defaults and will be used in series below
+		},
+		{
+			"targets": {"section/sports/baseball", "section/arts/design"},
+			"period": ["10s"]  <- temporarily override defaults for this series only
+		},
+		{
+			"targets": {"section/sports/golf", "section/arts/dance"},
+			"requests": 5  <- temporarily override defaults for this series only
+		}...
 
-    $ nperf -h
-    Stress test an HTTP server.
-    Usage: node ./bin/nperf [options] [target server]
-    
-    Options:
-      --conf, --config  Configuration file with targets                 
-      --target, -t      Target server name in config file               
-      -c                Number of concurrent requests                   
-      -n                Max number of total requests                    
-      -o                Output format: [text|json]. Default: text       
-      -v, --verbose     Verbose output                                  
-      --dry-run         Read config, but don't run (can be used with -v)
-      --help, -h        Print this usage and exit 
+### Targets: TargetURL(s) 
 
+	localhost:8080/nperf2?targets=www.xyz.foo
+	
+The url can only contain a single target, whereas the config file can contain a single target or an array:
 
-One useful feature of the tool is that you can save all parameters and server targets in a config file and refer to it instead of specifying them on the commandline. All parameters specified on the commandline override their counterparts in the config file.
+	"targets": "http://www.xyz.foo"
+	
+	"targets": {"http://www.xyz.foo", "http://www.abc.foo"}
+	
+### Root: Defines a root URL to prefix the targets which must then be partial urls.
 
-Sample config file `config.js`:
+	Forward slashes are added b/w root and targets when needed.
+	
+	"root": "www.xyz.foo",
+	"targets": {"section/sports/baseball", "section/arts/design"}
+	
+### Concurrency: Number of concurrent requests threads
 
-    module.exports = {
-        settings: {
-            concurrency: 10,  // -c
-            max_requests: 200,  // -n
-            output_format: 'text' // -o 'text' or 'json'
-        },
-        targets: {
-            // can have multiple targets here
-            // pick one using the --target commandline argument
-            local: {
-                host: 'localhost',
-                port: 8080,
-                path: '/path/to/http/resource',
-                headers: {  
-                    'X-Optional-Header': "header value"
-                }
-            },
-            google: {
-                host: 'www.google.com',
-                port: 80,
-                path: '/'
-            }
-        }
-    };
+Note that this parameter differs from the original nperf which sets the number of requests per thread.
 
-Set the port to `443` for HTTPS.
+### Requests: Max number of total requests
 
-To use the config file and specify the `google` target, run:
+### Period: Time b/w each requests as ms or s, defaults to ms, it can be an array with the min and max period
 
-    $ nperf --conf config.js -t google
-    [status] response# /request_id time: client time (ms) (server time (ms))
-    [200] 1 /1 time: 161 (-1)
-    [200] 2 /3 time: 164 (-1)
-    [200] 3 /6 time: 165 (-1)
-     ... output truncated ...
-    [200] 198 /198 time: 67 (-1)
-    [200] 199 /197 time: 81 (-1)
-    [200] 200 /199 time: 71 (-1)
-    stats:
-    { min: 43,
-      max: 722,
-      avg: 110.34500000000004,
-      count: 200,
-      rate: 88.65248226950355,
-      start: 1337832532680,
-      total_time: 2256 }
+Numeric values are assumed to be ms. Strings can be used with s and ms as units.
+	
+E.g.: 100, "100ms", "1s"
+	
+E.g.: ["100ms","1s"], [100,1000]
+	
+If the period is an array its value will be randomized b/w min and max for execution.
 
-The number of requests and concurrency values are taken from the config file, as well as the details for the `google` target. Output above is truncated for brevity.
+Arrays can only be defined in a config file.
+	
+### Extra: Custom parameters
 
+Extra can only be defined in a config file. It defines a set of parameters that can be used for instance to dynamically modify the content of the URL.
 
-## More examples
+Everytime nperf2 needs to make a request it will pass the url and the extra parameters to a getTarget function.
 
-Override config with commandline parameters:
+You will need to override the getTargetCallback function defined in the Nperf2 class to provide special processing of URL.
 
-    $ nperf --config config.js --target google -c 1 -n 20
+An example of this is found in the implementation of the PerfTester:
 
-JSON output:
+	var nperf2 = new Nperf2();
+	nperf2.getTargetCallback = UrlProvider.getTarget;
+	
+Note that we do not pass a callback, we replace the existing function with our own.
 
-    $ nperf -o json http://www.google.com -n 5
-    {"status":"status","response_count":"response#","request_id":"request_id","client_time":"client time (ms)","server_time":"server time (ms)"}
-    {"status":200,"request_id":2,"response_count":1,"client_time":467,"server_time":-1}
-    {"status":200,"request_id":0,"response_count":2,"client_time":475,"server_time":-1}
-    {"status":200,"request_id":4,"response_count":3,"client_time":475,"server_time":-1}
-    {"status":200,"request_id":1,"response_count":4,"client_time":477,"server_time":-1}
-    {"status":200,"request_id":3,"response_count":5,"client_time":486,"server_time":-1}
-    stats:
-    { min: 467,
-      max: 486,
-      avg: 476,
-      count: 5,
-      rate: 10.101010101010102,
-      start: 1337833296687,
-      total_time: 495 }
+Here is a sample custom implementation that appends a parameter named foo to the url with a value randomly selected in extra:
+	
+	getTarget(target, extra) {		
+		var r = Math.random();
+		var i = Math.floor(r*extra.length);	
+		return target + "&foo=" + extra[i];			
+	}
+	
+## Execution and Logging
 
+Running the tests systematically produces a log in addition to the feedback on the screen and the console. A "log" folder is expected at the root level.
 
-## Contributing
-
-I welcome pull requests!
+At this point running is sequential, res.end in server.js is called only when all the responses have been received which can take a bit of time. This is in order to log the status of the requests/responses in the browser window but is not ideal.
 
 ## License
 
 This software is distributed under the MIT License.
+
+## Disclaimer
+
+To the best of our knowledge the URLs provided in this file and the sample config files are fake and provided only as samples. You should not test against those URLs and test only against valid URLs of your choosing. We decline any responsibility for the inappropriate or illegitimate use of this program.
+
+
+
+
+		
+
+
+

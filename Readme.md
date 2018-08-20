@@ -37,6 +37,10 @@ Sample Output:
 ## Install
 
 Currently you need to download the source and install manually any dependency. We will release it as an NPM package in the future.
+
+With `npm` (currently not available)
+
+    $ npm install nperf2
 	
 The installation contains the source and sample files. `_start.bat` can then be used to launch a local node server on Windows.
 
@@ -45,19 +49,27 @@ The installation contains the source and sample files. `_start.bat` can then be 
 Most parameters can be set in the URL but to take full advantage of parameterization a config file is needed.
 The parameters extra and root, targets and periods when defined as arrays, must be set in a config file.
 
-### Help: Print this usage and exit
+### Help
+
+Print this usage and exit
 
 	localhost:8080/nperf2?help=true...
 	
-### Dryrun: Read config, but don't run
+### Dryrun
+
+Read config, but don't run
 
 	localhost:8080/nperf2?dryrun=true,...
 
-### Verbose: Verbose output
+### Verbose
+
+Verbose output
 
 	localhost:8080/nperf2?verbose=true...
 
-### Conf: Config file
+### Conf
+
+Config file
 
 	localhost:8080/nperf2?verbose=true&conf=sample1
 
@@ -67,9 +79,11 @@ The config file name can be set in full or be partial:
 
 * Partial name (no .json extension) - e.g.: `conf=bar` will be converted to: `./conf/conf.bar.json`
 	
-### Defaults: Persist parameters as defaults settings
+### Defaults
 
-	A config file can list different series of tests but you may want to set some defaults only once e.g.:
+Persists parameters as defaults settings
+
+E.g.: a config file can list different series of tests but you may want to set some defaults only once:
 	
 	[
 		{
@@ -85,9 +99,12 @@ The config file name can be set in full or be partial:
 		{
 			"targets": {"section/sports/golf", "section/arts/dance"},
 			"requests": 5  <- temporarily override defaults for this series only
-		}...
+		}
+	...
 
-### Targets: TargetURL(s) 
+### Targets
+
+Target URL(s) 
 
 	localhost:8080/nperf2?targets=www.xyz.foo
 	
@@ -97,32 +114,42 @@ The url can only contain a single target, whereas the config file can contain a 
 	
 	"targets": {"http://www.xyz.foo", "http://www.abc.foo"}
 	
-### Root: Defines a root URL to prefix the targets which must then be partial urls.
+### Root
 
-	Forward slashes are added b/w root and targets when needed.
+Defines a root URL to prefix the targets which must then be partial urls.
+
+Forward slashes are added b/w root and targets when needed.
 	
 	"root": "www.xyz.foo",
 	"targets": {"section/sports/baseball", "section/arts/design"}
 	
-### Concurrency: Number of concurrent requests threads
+### Concurrency
+
+Number of concurrent requests threads
 
 Note that this parameter differs from the original nperf which sets the number of requests per thread.
 
-### Requests: Max number of total requests
+### Requests
 
-### Period: Time b/w each requests as ms or s, defaults to ms, it can be an array with the min and max period
+Max number of total requests
+
+### Period
+
+Time b/w each requests as ms or s, defaults to ms, it can be an array with the min and max period
 
 Numeric values are assumed to be ms. Strings can be used with s and ms as units.
 	
-E.g.: 100, "100ms", "1s"
+* E.g.: 100, "100ms", "1s"
 	
-E.g.: ["100ms","1s"], [100,1000]
+* E.g.: ["100ms","1s"], [100,1000]
 	
 If the period is an array its value will be randomized b/w min and max for execution.
 
 Arrays can only be defined in a config file.
 	
-### Extra: Custom parameters
+### Extra
+
+Custom parameters
 
 Extra can only be defined in a config file. It defines a set of parameters that can be used for instance to dynamically modify the content of the URL.
 

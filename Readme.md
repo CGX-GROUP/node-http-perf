@@ -36,13 +36,11 @@ Sample Output:
 
 ## Install
 
-Currently you need to download the source and install manually any dependency. We will release it as an NPM package in the future.
-
-With `npm` (currently not available)
+With `npm`
 
     $ npm install nperf2
 	
-The installation contains the source and sample files. `_start.bat` can then be used to launch a local node server on Windows.
+The installation contains the source and sample files.
 
 ## Parameters
 

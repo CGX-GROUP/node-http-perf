@@ -35,6 +35,7 @@ const Extra = "extra";
 class Nperf2Runner {
 
     constructor(callback, log, getTargetCallback) {
+        Nperf2Runner._defaults = null; //fix: remove the defaults as the only way to wipe them out was to restart the server
         this.params = {};
         this.stats = {};
         this.responseReceived = 0;
@@ -55,7 +56,7 @@ class Nperf2Runner {
 
     static set defaults(value) { Nperf2Runner._defaults = value; }
 
-    get verbose() { return this.params.verbose === true; }
+    get verbose() { return Nperf2Runner.defaults.verbose === true; }
 
     log(s) { console.log(s); }
 
@@ -66,17 +67,7 @@ class Nperf2Runner {
         }
     }
 
-    static getParamsFromFile(conf) {
-        var f = path.resolve(conf);
-        if (!fs.existsSync(f)) {
-            console.log(`Error: Configuration file not found: ${f}\n`);
-            return false;
-        }
-        var params = require(f);
-        return params;
-    }
-
-    static readConfigurationFiles(params) {
+    static readConfigurationFiles(params, callback) {
         //expects {conf:001,...} or {conf:[001,002]} in the params passed in
         //the params passed in may also contain target(s) and if so will be run separately
         var allParams = [params];
@@ -85,20 +76,25 @@ class Nperf2Runner {
             if (!(conf.substr(0, 2) === "./")) {
                 conf = `./conf/${Conf}.${conf}.json`;
             }
-            
+
             if (!(conf.substr(0, 7) === "./conf/")) {
                 conf = `./conf/${conf.substr(2)}`;
             }
 
             console.log(`Trying to set params from conf file: ${conf}`);
-            var prmf = this.getParamsFromFile(conf);
-            var prmfArray = Array.isArray(prmf) ? prmf : [prmf];
-            for (var i = 0; i < prmfArray.length; i++) {
-                var prmfa = prmfArray[i];
-                allParams.push(prmfa);
-            }
+
+            var f = path.resolve(conf);
+            fs.readFileSync (f, 'utf8', function (err, data) {
+                if (err) return callback(null, err);
+                var prmf = JSON.parse(data);
+                var prmfArray = Array.isArray(prmf) ? prmf : [prmf];
+                for (var i = 0; i < prmfArray.length; i++) {
+                    var prmfa = prmfArray[i];
+                    allParams.push(prmfa);
+                }
+                return callback(allParams);
+            });
         }
-        return allParams;
     }
 
     logUsage() {
@@ -146,6 +142,9 @@ class Nperf2Runner {
             Object.assign(Nperf2Runner.defaults, prms);
             if (this.verbose) this.log("Updated defaults: " + this.getParamsLogTruncated(Nperf2Runner.defaults));
         }
+
+        //if verbose is set on any param set, set it on defaults
+        if (params.verbose === true) Nperf2Runner.defaults.verbose = true;
 
         //set all defaults values back into the current params if not already set
 
@@ -208,7 +207,7 @@ class Nperf2Runner {
         if (!params.targets) {
             if (this.verbose && !params.defaults) {
                 var s = this.getParamsLogTruncated(params);
-                this.log(`Info: No target specified on non defaults params:\n${s}`);
+                this.log(`Info: No target specified on non default params:\n${s}`);
             }
             retVal = false;
         }
@@ -368,6 +367,7 @@ class Nperf2Runner {
 
     run(params) {
         var paramArray = Array.isArray(params) ? params : [params];
+        let index = params.index.toString();
         for (var i = 0; i < paramArray.length; i++) {
 
             this.setParams(paramArray[i])
@@ -377,13 +377,16 @@ class Nperf2Runner {
             // this.log(this.getParamsLogTruncated(this.params));
             // this.log("\n");
 
+            if (paramArray.length > 1) index += `[${i}]`;
+
             var s = this.getParamsLogTruncated(this.params);
             if (!this.checkParams(this.params)) {
-                if (this.verbose) this.log(`Current param set (not executed) #${i}:\n${s}`);
+                if (this.verbose && this.params.defaults) this.log(`Defaults params (not executed) #${index}:\n${s}`);
+                if (!this.params.defaults) this.log(`Non defaults params cannot be executed #${index}:\n${s}`);
                 this.completionCallback();
                 continue;
             }
-            if (this.verbose) this.log(`Execution of param set #${i}:\n${s}`);
+            this.log(`Execution of param set #${index}:\n${s}`);
             this._run();
         }
     }
@@ -399,7 +402,6 @@ class Nperf2Runner {
 
         this.getStats();
 
-        var concurrency = this.params.concurrency;
         var maxRequests = this.params.requests;
         var requestPerRun = Math.ceil(maxRequests / this.params.concurrency);
         var root = this.params.root;
@@ -412,17 +414,17 @@ class Nperf2Runner {
 
         var that = this;
 
-        for (var k = 0; k < targets.length; k++) {
+        for (var k = 0; k < nt; k++) {
 
             var j = 0;
 
             for (var i = 0; i < maxRequests; i++) {
-                
+
                 var target = this.getTarget(targets[k], this.params.extra);
                 if (root) target = urljoin(root, target);
 
                 var hasProtocol = target.toLowerCase().startsWith("http");
-                if(!hasProtocol) target = "http://" + target;
+                if (!hasProtocol) target = "http://" + target;
 
                 var r = {
                     target: target,
@@ -515,32 +517,42 @@ class Nperf2 {
         //get params from URL if any
         this.parseUrl(request);
         //get params from config file if a conf file was passed in url
-        var params = Nperf2Runner.readConfigurationFiles(this.params);
+        Nperf2Runner.readConfigurationFiles(this.params, (params, err) => {
 
-        //replace the default function to log to response as well as in console
-        var log = (s) => {
-            console.log(s);
-            response.write(`#${s}\n`);
-            if (logCallback) logCallback.call(this, s);
-        }
-
-        var k = -1;
-
-        var callback = function () {
-            k++;
-            if (k < (params.length - 1)) return;
-            if (completionCallback) completionCallback();
-        };
-
-        for (var i = 0; i < params.length; i++) {
-
-            if (params[i].conf) {
-                log(`Configuration file: ${params[i].conf}`);
+            //replace the default function to log to response as well as in console
+            var log = (s) => {
+                console.log(s);
+                response.write(`#${s}\n`);
+                if (logCallback) logCallback.call(this, s);
             }
 
-            var n = new Nperf2Runner(callback, log, this.getTargetCallback);
-            n.run(params[i]);
-        }
+            if (err) {
+                if (err.code === 'ENOENT') {
+                    let msg = `Error: Configuration file not found: ${f}`;
+                    log(msg);
+                }
+                if (completionCallback) completionCallback();
+            }
+
+            var k = -1;
+
+            var callback = function () {
+                k++;
+                if (k < (params.length - 1)) return;
+                if (completionCallback) completionCallback();
+            };
+
+            for (var i = 0; i < params.length; i++) {
+
+                if (params[i].conf) {
+                    log(`Configuration file: ${params[i].conf}`);
+                }
+
+                var n = new Nperf2Runner(callback, log, this.getTargetCallback);
+                params[i].index = i;
+                n.run(params[i]);
+            }
+        });
     }
 }
 

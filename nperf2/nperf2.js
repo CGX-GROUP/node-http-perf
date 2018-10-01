@@ -84,7 +84,7 @@ class Nperf2Runner {
             console.log(`Trying to set params from conf file: ${conf}`);
 
             var f = path.resolve(conf);
-            fs.readFileSync (f, 'utf8', function (err, data) {
+            fs.readFile (f, 'utf8', function (err, data) {
                 if (err) return callback(null, err);
                 var prmf = JSON.parse(data);
                 var prmfArray = Array.isArray(prmf) ? prmf : [prmf];
